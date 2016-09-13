@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Scanner;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemLongClickListener {
 
@@ -22,7 +23,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     EditText text;
     Button sendButton;
     ArrayAdapter<String> chatList;
-    ChatAppClient chatApp = new ChatAppClient();
+    final String serverIP = "10.0.0.132";
+    final int portNumber = 8005;
+    Socket clientSocket = null;
+    PrintWriter out = null;
+    BufferedReader in = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,31 +47,57 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
 
+        connectionOpener();
+        System.out.println("connection open");
+
+    }
+
+    public void connectionOpener() {
         try {
-            Socket clientSocket = new Socket("10.0.0.132", 8080);
-//            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            clientSocket = new Socket(serverIP, portNumber);
+            in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            out = new PrintWriter(clientSocket.getOutputStream(), true);
 
-            String serverResponse;
-            serverResponse = in.readLine();
-            System.out.println("Received message: " + serverResponse);
+        } catch (IOException exception) {
+            exception.printStackTrace();
+        }
+        System.out.println("connection open/closed");
+    }
+    @Override
+    public void onClick(View v){
+        System.out.println("ready to send");
+        String chatline = text.getText().toString();
+        chatList.add(chatline);
+        System.out.println("sent to list");
+        try {
+            sendToServer(chatline);
+        } catch (IOException exception) {
+            exception.printStackTrace();
+        }
+        text.setText("");
+        System.out.println("message sent from on click");
+    }
 
-        } catch (IOException exception){
+    public void sendToServer(String chatline) throws IOException{
+        System.out.println("Using output stream: " + out.toString());
+        out.println(chatline);
+        System.out.println("message sent from sendtoserver");
+    }
+
+    public void incomingText() {
+        try {
+            String serverText = in.readLine();
+            System.out.println(serverText);
+        } catch (IOException exception) {
             exception.printStackTrace();
         }
     }
-
-    @Override
-    public void onClick(View v){
-        String chatline = text.getText().toString();
-        chatList.add(chatline);
-//        chatApp.conversationHandler();
-        text.setText("");
-    }
-
     @Override
     public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
         String item = chatList.getItem(position);
         chatList.remove(item);
         return true;
-    }}
+    }
+
+
+}

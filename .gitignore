@@ -15,3 +15,5 @@ lib
 target
 *.pdf
 *.jpg
+*.gradle
+*.pro
